@@ -1,6 +1,8 @@
 var mysql = require("mysql"); 
 /*var nodeArgs = process.argv;*/
 var inquirer = require('inquirer');
+var index = require('./index.sql');
+var packageJSON = require('./package.json');
 
 var connection = mysql.createConnection({   
 	host: "localhost",   
@@ -41,92 +43,118 @@ function runningSearch() {
 			break;
 
 			case "n":
-			console.log("Have a nice day!")
+			console.log("Have a nice day!\n")
 			connection.end();
 		}
 	})
 }
+//	this is an example of an if else statement which could also work
+//    .then(function(answer) {       // based on their answer, either call the bid or the post functions       if (answer.postOrBid.toUpperCase() === "POST") {         postAuction();       }       else {         bidAuction();       }     }); }
+var purchasedItem;
 
 function productSearch() {
+	connection.query("SELECT * FROM products", function(err, res) {
 	inquirer.prompt({
 		name: "item_id",
 		type: "input",
-		message: "What item can I help you with today? choose item number"
+		message: "What item can I help you with today? choose item number",
+		choices: 
+		function() {
+			var choiceArray = [];
+			for (var i = 0; i < res.length; i++) {
+				choiceArray.push(res[i].item_id);
+			}
+			return choiceArray;
+		}
 	}).then(function(answer) {
-		var query = "SELECT item_id, product_name, department_name, price, stock_quantity FROM index.sql WHERE ?";
-		connection.query(query, { item_id: answer.item_id }, function(err, res) {
-			for(var i = 0; i < res.length; i++) {
-				console.log("item_id: " + res[i].item_id + " || Name: " + res[i].product_name + " || department: " + res[i].department_name + " || price: " + res[i].price + " || left in stock: " + res[i].stock_quantity);
-			}		
-			purchaseFinal();
+			for (var i = 0; i < res.length; i++) {
+				if (res[i].item_id === answer.item_id) {
+					purchasedItem = res[i];
+					console.log("item_id: " + res[i].item_id + " || Name: " + res[i].product_name + " || department: " + res[i].department_name + " || price: " + res[i].price + " || left in stock: " + res[i].stock_quantity + "\n");
+					purchaseFinal();
+				}
+			}
+		});
+	});
+};
+	
+function purchaseFinal() {
+	connection.query("SELECT * FROM products", function(err, res) {
+		if (err) throw err;
+		inquirer.prompt({
+			name: "action",
+			type: "list",
+			message: "Would you like to purchase this item? y or n",
+			choices: ["y", "n"]
+		}).then(function(answer) {
+			switch(answer.action) {
+				case "y":
+				updateProduct();
+				break;
+				case "n":
+				readProducts();
+				break;
+			}
 		})
 	})
-}
+};
 
-function purchaseFinal() {
+function updateProduct() {
+	/*connection.query("SELECT" + purchasedItem + "FROM products", function(err, res) {*/
+	if (product.stock_quantity > 0) {	
+		connection.query(
+			"UPDATE products SET ? WHERE ?"
+			[
+				{ stock_quantity: -1 },
+				{ item_id: "products.item_id" }
+			],
+			function(err, res) {
+				if (err) throw err;
+				console.log("We have removed a " + res.product_name + "from our inventory and will be shipping it to you shortly.\n" );
+				addToTotal();
+			}
+		);
+	} else {
+		console.log("Insufficient quantity! Chose another item.\n");
+		readProducts();
+	}
+};
+	/*});*/
+		
+var greenDolarSpentPlaya; 
+
+function addToTotal() {	
+	connection.query("SELECT * FROM cash", function(err, res) {
+		connection.query(
+			"UPDATE products SET ? WHERE ?"
+			[
+				{ totalPurchase: + purchasedItem.price },
+				{ totalPurchase: "totalPurchase" }
+			],
+			function(err, res) {
+				if (err) throw err;
+				checkout();
+			}
+		);
+	});
+} 		
+
+function checkout() {
 	inquirer.prompt({
 		name: "action",
 		type: "list",
-		message: "Would you like to purchase this item? y or n",
+		message: "You have purchased a " + purchasedItem.product_name + " . " + "Your total is " + greenDolarSpentPlaya.totalPurchase + " . " + "Would you like to purchase something else?",
 		choices: ["y", "n"]
 	}).then(function(answer) {
 		switch(answer.action) {
 			case "y":
-			updateProduct();
+			console.log("What else can I help you with?\n");
+			readProducts();
 			break;
-
 			case "n":
-			readProducts();
+			console.log("Thank you for your purchase. Have a wonderful day.\n");
+			connection.end();
 			break;
 		}
-	})
-}
-
-function updateProduct() {
-	connection.query("SELECT price FROM products", function(err, res) {    
-		if (err) throw err; 
-		if (product.price == 0) {
-// start here
-		}
-
-
-// Log results from SELECT    
-		console.log(res);	
-		runningSearch(); 
-
-
-	var notIn === 0;
-	var inSto !== 0;
-	SELECT item_id,
-		case products.stock_quantity
-			when inSto then
-	console.log("We have removed one of these items from our inventory.\n");   
-	var query = connection.query( "UPDATE products SET ? WHERE ?",     
-	[       
-	{ stock_quantity: -1 },            
-	],       
-	addToTotal();
-		when notIn then 
-			console.log("Insufficient quantity! Chose another item.");
-			readProducts();
-	FROM products.stock_quantity
-	// logs the actual query being run   
-/*	console.log(query.sql); */
-	);
-}
-function addToTotal() {
-	SELECT item_id, 
-		case products.price
-	FROM products.price
-	SELECT cash
-		case cash.total  
-	FROM cash.price
-	console.log("Thank you for your purchase. Your total has been updated.");
-	var query = connection.query( "UPDATE products SET ? WHERE ?",
-	[
-	{	cash.total: +products.price	}
-	]
-		)
-}
-// dont forget this once you figure out where to put it
-//		connection.end();
+	});
+};
