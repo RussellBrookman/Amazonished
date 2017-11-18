@@ -1,5 +1,5 @@
 {
-  "name": "bamazonDB",
+  "name": "bamazon_db",
   "version": "1.0.0",
   "description": "online shopping tool",
   "main": "bamazonCustomer.js",
@@ -15,6 +15,10 @@
   "license": "ISC",
   "homepage": "https://github.com/RussellBrookman/Bamazon#readme",
   "dependencies": {
-    "mysql": "^2.13.0"
+    "mysql": "^2.15.0",
+    "inquirer": "^4.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/RussellBrookman/Bamazon/issues"
   }
 }

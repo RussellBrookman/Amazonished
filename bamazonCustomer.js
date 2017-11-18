@@ -1,8 +1,6 @@
 var mysql = require("mysql"); 
 /*var nodeArgs = process.argv;*/
 var inquirer = require('inquirer');
-var index = require('./index.sql');
-var packageJSON = require('./package.json');
 
 var connection = mysql.createConnection({   
 	host: "localhost",   
@@ -10,9 +8,11 @@ var connection = mysql.createConnection({
 //  username   
 	user: "root",   
 //  password   
-	password: "",   
+	password: "IwantMySQL",   
 	database: "bamazon_db" 
 }); 
+
+var purchasedItem = [];
 
 connection.connect(function(err) {   
 	if (err) throw err;   
@@ -21,11 +21,12 @@ connection.connect(function(err) {
 });   
 
 function readProducts() {   
-	console.log("Here is everything in strore.\n");   
-	connection.query("SELECT * FROM products", function(err, res) {     
-		if (err) throw err;     
-// Log results from SELECT    
-		console.log(res);	
+	var query = "SELECT * FROM products";  
+	connection.query(query, function(err, res) {     
+		for (var i = 0; i < res.length; i++) {		
+			console.log("Item_id: " + res[i].item_id + " || Product_name: " + res[i].product_name + " || Department_name: " + res[i].department_name + " || Price: " + res[i].price + " || Stock_quantity" + res[i].stock_quantity + "\n");	
+		}
+		console.log("Here is everything in strore.\n");
 		runningSearch();        
 	}); 
 }  
@@ -33,8 +34,8 @@ function readProducts() {
 function runningSearch() {
 	inquirer.prompt({
 		name: "action",
-		type: "list",
-		message: "Are you interested in any of these items? y or n",
+		type: "rawlist",
+		message: "Are you interested in any of these items? (y or n)",
 		choices: ["y", "n"]
 	}).then(function(answer) {
 		switch(answer.action) {
@@ -43,74 +44,64 @@ function runningSearch() {
 			break;
 
 			case "n":
-			console.log("Have a nice day!\n")
+			console.log("Have a nice day!\n");
 			connection.end();
+			break;
 		}
 	})
 }
-//	this is an example of an if else statement which could also work
-//    .then(function(answer) {       // based on their answer, either call the bid or the post functions       if (answer.postOrBid.toUpperCase() === "POST") {         postAuction();       }       else {         bidAuction();       }     }); }
-var purchasedItem;
 
 function productSearch() {
-	connection.query("SELECT * FROM products", function(err, res) {
 	inquirer.prompt({
 		name: "item_id",
 		type: "input",
-		message: "What item can I help you with today? choose item number",
-		choices: 
-		function() {
-			var choiceArray = [];
+		message: "What item can I help you with today? (choose item number)",
+	}).then(function(selectedItem) {
+		var query = "SELECT item_id, product_name, department_name, price, stock_quantity FROM products WHERE ?";
+		connection.query(query, { item_id: selectedItem.item_id }, function(err, res) {
 			for (var i = 0; i < res.length; i++) {
-				choiceArray.push(res[i].item_id);
-			}
-			return choiceArray;
-		}
-	}).then(function(answer) {
-			for (var i = 0; i < res.length; i++) {
-				if (res[i].item_id === answer.item_id) {
-					purchasedItem = res[i];
-					console.log("item_id: " + res[i].item_id + " || Name: " + res[i].product_name + " || department: " + res[i].department_name + " || price: " + res[i].price + " || left in stock: " + res[i].stock_quantity + "\n");
-					purchaseFinal();
+				if (res[i].item_id === selectedItem.item_id) {
+					console.log("Item_id: " + res[i].item_id + " || Product_name: " + res[i].product_name + " || Department_name: " + res[i].department_name + " || Price: " + res[i].price + " || Stock_quantity" + res[i].stock_quantity + "\n");
+					purchasedItem.push(selectedItem);
+					purchaseFinal();	
+				} else {
+					console.log("We don't have a record for Item_id number: " + item_id + ". Please choose a selected Item.");
+					productSearch();
 				}
 			}
 		});
 	});
 };
-	
+
 function purchaseFinal() {
-	connection.query("SELECT * FROM products", function(err, res) {
-		if (err) throw err;
-		inquirer.prompt({
-			name: "action",
-			type: "list",
-			message: "Would you like to purchase this item? y or n",
-			choices: ["y", "n"]
-		}).then(function(answer) {
-			switch(answer.action) {
-				case "y":
-				updateProduct();
-				break;
-				case "n":
-				readProducts();
-				break;
+	inquirer.prompt({
+		name: "action",
+		type: "rawlist",
+		message: "Would you like to purchase this item? (y or n)",
+		choices: ["y", "n"]
+	}).then(function(answer) {
+		switch(answer.action) {
+			case "y":
+			updateProduct();
+			break;
+				
+			case "n":
+			readProducts();
+			break;
 			}
 		})
-	})
-};
+	}
+}
 
 function updateProduct() {
-	/*connection.query("SELECT" + purchasedItem + "FROM products", function(err, res) {*/
 	if (product.stock_quantity > 0) {	
-		connection.query(
-			"UPDATE products SET ? WHERE ?"
+		var query = connection.query("UPDATE products SET ? WHERE ?",
 			[
 				{ stock_quantity: -1 },
-				{ item_id: "products.item_id" }
+				{ item_id: purchasedItem[0] }
 			],
 			function(err, res) {
-				if (err) throw err;
-				console.log("We have removed a " + res.product_name + "from our inventory and will be shipping it to you shortly.\n" );
+				console.log("We have removed a " + res.affectedRows + " from our inventory and will be shipping it to you shortly.\n" );
 				addToTotal();
 			}
 		);
@@ -119,42 +110,37 @@ function updateProduct() {
 		readProducts();
 	}
 };
-	/*});*/
-		
-var greenDolarSpentPlaya; 
 
 function addToTotal() {	
-	connection.query("SELECT * FROM cash", function(err, res) {
-		connection.query(
-			"UPDATE products SET ? WHERE ?"
-			[
-				{ totalPurchase: + purchasedItem.price },
-				{ totalPurchase: "totalPurchase" }
-			],
-			function(err, res) {
-				if (err) throw err;
-				checkout();
-			}
-		);
-	});
+	var query = connection.query("UPDATE cash SET? WHERE ?",
+		[
+			{ totalPurchase: purchasedItem[3] }
+			{ item_id: purchasedItem[0] }
+		]
+	)
+	checkout();
 } 		
 
 function checkout() {
+	var query = "Select totalPurchase FROM cash";
+	connection.query(query, function(err, res) {
+		console.log("You have purchased a " + purchasedItem[1] + ". " " Total: $" + res[0] + ".00\n");
+	});
 	inquirer.prompt({
 		name: "action",
 		type: "list",
-		message: "You have purchased a " + purchasedItem.product_name + " . " + "Your total is " + greenDolarSpentPlaya.totalPurchase + " . " + "Would you like to purchase something else?",
+		message: "Would you like to purchase anything else? (y or n)",
 		choices: ["y", "n"]
 	}).then(function(answer) {
-		switch(answer.action) {
+		switch (answer.action) {
 			case "y":
 			console.log("What else can I help you with?\n");
 			readProducts();
 			break;
 			case "n":
-			console.log("Thank you for your purchase. Have a wonderful day.\n");
+			console.log("Thank you for your purchase. Have a wonderful day.\n")
 			connection.end();
 			break;
-		}
+		}	
 	});
 };
