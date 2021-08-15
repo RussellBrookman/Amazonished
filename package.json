@@ -1,24 +1,24 @@
 {
-  "name": "bamazon_db",
+  "name": "amazonished",
   "version": "1.0.0",
-  "description": "online shopping tool",
-  "main": "bamazonCustomer.js",
+  "description": "node_mysql_shopping_program",
+  "main": "amazonishedCustomer.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "mysql-import": "mysql -h 127.0.0.1 -u root seed sql"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RussellBrookman/Bamazon.git"
+    "url": "git+https://github.com/RussellBrookman/Amazonish.git"
   },
-  "author": "Russell_Brookman",
+  "author": "Russell Brookman",
   "license": "ISC",
-  "homepage": "https://github.com/RussellBrookman/Bamazon#readme",
-  "dependencies": {
-    "mysql": "^2.15.0",
-    "inquirer": "^4.0.0"
-  },
   "bugs": {
-    "url": "https://github.com/RussellBrookman/Bamazon/issues"
+    "url": "https://github.com/RussellBrookman/Amazonish/issues"
+  },
+  "homepage": "https://github.com/RussellBrookman/Amazonish#readme",
+  "dependencies": {
+    "cli-table": "^0.3.1",
+    "inquirer": "^7.0.0",
+    "mysql": "^2.17.1"
   }
 }
